@@ -5,8 +5,8 @@
   <title>משחק המילים</title>
   <style>
     body {
-  font-size: 3.5vw;
-  line-height: 1.8;
+  font-size: 4.5vw;
+  line-height: 2;
   width: 100vw;
   height: 100vh;
   margin: 0;
@@ -76,13 +76,13 @@
 #game, #startScreen, #endScreen {
   width: 100vw;
   height: 100vh;
-  padding: 5vh 3vw;
+  padding: 0 5vw;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 2vh;
+  gap: 4vh;
 }
 @keyframes spin {
   0% { transform: rotate(0deg); }
@@ -104,6 +104,14 @@
 </div>
   <h1>משחק המילים</h1>
   <div id="startScreen">
+    <label for="playerName">בחר שם שחקן:</label><br>
+    <select id="playerName" style="font-size: 2em; padding: 10px 20px; border-radius: 10px;">
+      <option value="אורי">אורי</option>
+      <option value="אלה">אלה</option>
+      <option value="שחר">שחר</option>
+      <option value="נבו">נבו</option>
+    </select>
+    <br><br>
     <select id="direction" style="font-size: 2em; padding: 10px 20px; border-radius: 10px;">
       <option value="en2he">אנגלית לעברית</option>
       <option value="he2en">עברית לאנגלית</option>
@@ -408,7 +416,7 @@
   { en: 'fingers', he: 'אצבעות' },
   { en: 'arms', he: 'זרועות' },
   { en: 'legs', he: 'רגליים' },
-  { en: 'feet', he: 'כפות' },
+  { en: 'feet', he: 'כפות רגליים' },
   { en: 'hair', he: 'שיער' },
   { en: 'heart', he: 'לב' },
   { en: 'skin', he: 'עור' },
@@ -514,6 +522,7 @@
 
     let wordPairs = [];
     let score = 0;
+let playerName = '';
     let correctAnswers = [];
     let wrongAnswers = [];
     let currentQuestion = 0;
@@ -528,6 +537,7 @@
       wrongAnswers = [];
       currentQuestion = 0;
       translationDirection = document.getElementById('direction').value;
+      playerName = document.getElementById('playerName').value;
       wordPairs = [...allWords].sort(() => 0.5 - Math.random()).slice(0, 10);
       document.getElementById('startScreen').style.display = 'none';
       document.getElementById('endScreen').style.display = 'none';
@@ -593,7 +603,7 @@
         score++;
         correctSound.play();
         correctAnswers.push({ q: questionWord, a: correctWord });
-        document.getElementById('result').textContent = 'נכון!';
+        document.getElementById('result').textContent = `${playerName}, כל הכבוד! ענית נכון!`;
         if (translationDirection === 'he2en') {
           const synth = window.speechSynthesis;
           const utter = new SpeechSynthesisUtterance(correctAnswer);
@@ -615,7 +625,7 @@
           synth.speak(utter);
         }
         wrongAnswers.push({ q: questionWord, a: correctWord });
-        document.getElementById('result').innerHTML = `לא נכון.<br>התשובה הנכונה היא: <strong>${correctAnswer}</strong>`;
+        document.getElementById('result').innerHTML = `${playerName}, לא נכון.<br>התשובה הנכונה היא: <strong>${correctAnswer}</strong>`;
         setTimeout(() => {
           currentQuestion++;
           nextQuestion();
@@ -640,12 +650,12 @@
       } else if (score >= 5) {
         medal = '🥉';
       }
-      let html = `<h2>המשחק הסתיים</h2><p style='color:${score >= wordPairs.length * 0.7 ? "green" : "red"}'>הציון שלך: ${score} מתוך ${wordPairs.length} ${medal}</p>`;
+      let html = `<h2>המשחק הסתיים</h2><p style='color:${score >= wordPairs.length * 0.7 ? "green" : "red"}'>${playerName}, הציון שלך: 'הציון שלך'}: ${score} מתוך ${wordPairs.length} ${medal}</p>`;
       html += '<h3>מילים שידעת:</h3><ul>' + correctAnswers.map(p => `<li>${p.q} - ${p.a}</li>`).join('') + '</ul>';
       html += '<h3>מילים שלא ידעת:</h3><ul>' + wrongAnswers.map(p => `<li>${p.q} - ${p.a}</li>`).join('') + '</ul>';
       html += '<button onclick="location.reload()">משחק חדש</button>';
       html += '<button onclick="retryWrong()">נסה שוב את המילים שלא ידעת</button>';
-      html += `<br><a href='https://wa.me/?text=שיחקתי%20בחידון%20תרגום%20וקיבלתי%20${score}%20מתוך%20${wordPairs.length}!%20נסה%20גם%20אתה!' target='_blank' style='display:inline-block; margin-top:15px; font-size:1em; color:white; background:#25D366; padding:10px 20px; border-radius:8px; text-decoration:none;'>שתף בוואטסאפ</a>`;
+      html += `<br><a href='https://wa.me/?text=${playerName}%20שיחק%20בחידון%20תרגום%20וקיבל%20${score}%20מתוך%20${wordPairs.length}!%20נסה%20גם%20אתה!' target='_blank' style='display:inline-block; margin-top:15px; font-size:1em; color:white; background:#25D366; padding:10px 20px; border-radius:8px; text-decoration:none;'>שתף בוואטסאפ</a>`;
 document.getElementById('endScreen').innerHTML = html;
       document.getElementById('endScreen').style.display = 'block';
     }
