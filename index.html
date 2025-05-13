@@ -3,10 +3,654 @@
 <head>
   <meta charset="UTF-8">
   <title>English-Hebrew Word Quiz</title>
-  <!-- ... full content from canvas ... -->
+  <style>
+    body {
+      font-size: 1.4em;
+      line-height: 1.6;
+      background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+      direction: rtl;
+      font-family: 'Assistant', sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      background: #eef5ff;
+      text-align: center;
+      padding: 30px;
+    }
+    .word {
+      font-size: 2.5em;
+      font-weight: bold;
+      color: #0d47a1;
+      font-size: 2em;
+      margin: 20px;
+    }
+    .options button,
+    #startScreen button,
+    #endScreen button {
+      margin: 10px;
+      padding: 15px 30px;
+      font-size: 1.5em;
+      border: none;
+      border-radius: 8px;
+      background-color: #007BFF;
+      color: white;
+      transition: background-color 0.3s ease;
+      cursor: pointer;
+    }
+    .options button:hover,
+    #startScreen button:hover,
+    #endScreen button:hover {
+      background-color: #0056b3;
+    }
+    .correct {
+      background-color: #4CAF50 !important;
+      color: white;
+    }
+    .wrong {
+      background-color: #f44336 !important;
+      color: white;
+    }
+    .correct {
+    animation: pulse-green 0.6s ease;
+  }
+
+  .wrong {
+    animation: shake-red 0.4s ease;
+  }
+
+  @keyframes pulse-green {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes shake-red {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('service-worker.js');
+    });
+  }
+</script>
 </head>
 <body>
-  <h1>English-Hebrew Word Quiz</h1>
-  <p>All game logic and word list is now embedded.</p>
+  <h1>English-Hebrew Quiz</h1>
+  <div id="startScreen">
+    <select id="direction">
+      <option value="en2he">אנגלית לעברית</option>
+      <option value="he2en">עברית לאנגלית</option>
+    </select>
+    <br><br>
+    <button id="startBtn">התחל משחק</button>
+  </div>
+
+  <div id="game" style="display:none;">
+    <div id="progress"></div>
+    <div class="word" id="quizWord"></div>
+    <div class="options" id="options"></div>
+    <div id="result"></div>
+  </div>
+
+  <div id="endScreen" style="display:none;"></div>
+
+  <audio id="sound-correct" src="https://cdn.pixabay.com/download/audio/2022/03/03/audio_54e10f6e5e.mp3?filename=correct-2-46134.mp3"></audio>
+  <audio id="sound-wrong" src="https://cdn.pixabay.com/download/audio/2022/03/03/audio_2075820c01.mp3?filename=wrong-126515.mp3"></audio>
+
+  <script>
+   const allWords = [
+  { en: 'I', he: 'אני' },
+  { en: 'you', he: 'אתה/את' },
+  { en: 'he', he: 'הוא' },
+  { en: 'she', he: 'היא' },
+  { en: 'it', he: 'זה/זאת' },
+  { en: 'we', he: 'אנחנו' },
+  { en: 'they', he: 'הם/הן' },
+  { en: 'me', he: 'אותי' },
+  { en: 'him', he: 'אותו' },
+  { en: 'her', he: 'אותה' },
+  { en: 'us', he: 'אותנו' },
+  { en: 'them', he: 'אותם/אותן' },
+  { en: 'be', he: 'להיות' },
+  { en: 'have', he: 'יש/ל' },
+  { en: 'do', he: 'לעשות' },
+  { en: 'go', he: 'ללכת' },
+  { en: 'come', he: 'לבוא' },
+  { en: 'see', he: 'לראות' },
+  { en: 'look', he: 'להסתכל' },
+  { en: 'say', he: 'לומר' },
+  { en: 'tell', he: 'לספר' },
+  { en: 'ask', he: 'לשאול' },
+  { en: 'know', he: 'לדעת' },
+  { en: 'think', he: 'לחשוב' },
+  { en: 'want', he: 'לרצות' },
+  { en: 'like', he: 'לאהוב' },
+  { en: 'need', he: 'להצטרך' },
+  { en: 'work', he: 'לעבוד' },
+  { en: 'live', he: 'לחיות' },
+  { en: 'give', he: 'לתת' },
+  { en: 'take', he: 'לקחת' },
+  { en: 'make', he: 'לעשות' },
+  { en: 'man', he: 'איש' },
+  { en: 'woman', he: 'אישה' },
+  { en: 'boy', he: 'ילד' },
+  { en: 'girl', he: 'ילדה' },
+  { en: 'people', he: 'אנשים' },
+  { en: 'friend', he: 'חבר' },
+  { en: 'mother', he: 'אמא' },
+  { en: 'father', he: 'אבא' },
+  { en: 'family', he: 'משפחה' },
+  { en: 'home', he: 'בית' },
+  { en: 'house', he: 'בית' },
+  { en: 'school', he: 'בית' },
+  { en: 'teacher', he: 'מורה' },
+  { en: 'day', he: 'יום' },
+  { en: 'night', he: 'לילה' },
+  { en: 'time', he: 'זמן' },
+  { en: 'year', he: 'שנה' },
+  { en: 'world', he: 'עולם' },
+  { en: 'big', he: 'גדול' },
+  { en: 'small', he: 'קטן' },
+  { en: 'good', he: 'טוב' },
+  { en: 'bad', he: 'רע' },
+  { en: 'happy', he: 'שמח' },
+  { en: 'sad', he: 'עצוב' },
+  { en: 'hot', he: 'חם' },
+  { en: 'cold', he: 'קר' },
+  { en: 'new', he: 'חדש' },
+  { en: 'old', he: 'ישן' },
+  { en: 'fast', he: 'מהיר' },
+  { en: 'slow', he: 'איטי' },
+  { en: 'young', he: 'צעיר' },
+  { en: 'old', he: 'זקן' },
+  { en: 'one', he: 'אחד' },
+  { en: 'two', he: 'שניים' },
+  { en: 'three', he: 'שלושה' },
+  { en: 'four', he: 'ארבעה' },
+  { en: 'five', he: 'חמישה' },
+  { en: 'six', he: 'שישה' },
+  { en: 'seven', he: 'שבעה' },
+  { en: 'eight', he: 'שמונה' },
+  { en: 'nine', he: 'תשעה' },
+  { en: 'ten', he: 'עשרה' },
+  { en: 'in', he: 'ב' },
+  { en: 'on', he: 'על' },
+  { en: 'at', he: 'ב' },
+  { en: 'to', he: 'ל' },
+  { en: 'from', he: 'מ' },
+  { en: 'with', he: 'עם' },
+  { en: 'and', he: 'ו' },
+  { en: 'but', he: 'אבל' },
+  { en: 'or', he: 'או' },
+  { en: 'what', he: 'מה' },
+  { en: 'where', he: 'איפה' },
+  { en: 'when', he: 'מתי' },
+  { en: 'who', he: 'מי' },
+  { en: 'why', he: 'למה' },
+  { en: 'how', he: 'איך' },
+  { en: 'eat', he: 'לאכול' },
+  { en: 'drink', he: 'לשתות' },
+  { en: 'sleep', he: 'לישון' },
+  { en: 'walk', he: 'ללכת' },
+  { en: 'run', he: 'לרוץ' },
+  { en: 'jump', he: 'לקפוץ' },
+  { en: 'play', he: 'לשחק' },
+  { en: 'read', he: 'לקרוא' },
+  { en: 'write', he: 'לכתוב' },
+  { en: 'listen', he: 'להקשיב' },
+  { en: 'speak', he: 'לדבר' },
+  { en: 'call', he: 'לקרוא' },
+  { en: 'help', he: 'לעזור' },
+  { en: 'learn', he: 'ללמוד' },
+  { en: 'try', he: 'לנסות' },
+  { en: 'buy', he: 'לקנות' },
+  { en: 'sell', he: 'למכור' },
+  { en: 'open', he: 'לפתוח' },
+  { en: 'close', he: 'לסגור' },
+  { en: 'start', he: 'להתחיל' },
+  { en: 'stop', he: 'לעצור' },
+  { en: 'water', he: 'מים' },
+  { en: 'food', he: 'אוכל' },
+  { en: 'bread', he: 'לחם' },
+  { en: 'milk', he: 'חלב' },
+  { en: 'apple', he: 'תפוח' },
+  { en: 'book', he: 'ספר' },
+  { en: 'pen', he: 'עט' },
+  { en: 'paper', he: 'נייר' },
+  { en: 'table', he: 'שולחן' },
+  { en: 'chair', he: 'כיסא' },
+  { en: 'door', he: 'דלת' },
+  { en: 'window', he: 'חלון' },
+  { en: 'bed', he: 'מיטה' },
+  { en: 'car', he: 'מכונית' },
+  { en: 'bus', he: 'אוטובוס' },
+  { en: 'road', he: 'כביש' },
+  { en: 'street', he: 'רחוב' },
+  { en: 'park', he: 'פארק' },
+  { en: 'shop', he: 'חנות' },
+  { en: 'store', he: 'חנות' },
+  { en: 'baby', he: 'תינוק' },
+  { en: 'child', he: 'ילד' },
+  { en: 'doctor', he: 'רופא' },
+  { en: 'student', he: 'סטודנט' },
+  { en: 'worker', he: 'עובד' },
+  { en: 'school', he: 'בית' },
+  { en: 'hospital', he: 'בית' },
+  { en: 'bank', he: 'בנק' },
+  { en: 'restaurant', he: 'מסעדה' },
+  { en: 'airport', he: 'שדה' },
+  { en: 'office', he: 'משרד' },
+  { en: 'city', he: 'עיר' },
+  { en: 'village', he: 'כפר' },
+  { en: 'country', he: 'מדינה' },
+  { en: 'beach', he: 'חוף' },
+  { en: 'easy', he: 'קל' },
+  { en: 'difficult', he: 'מורכב' },
+  { en: 'hard', he: 'קשה' },
+  { en: 'soft', he: 'רך' },
+  { en: 'strong', he: 'חזק' },
+  { en: 'weak', he: 'חלש' },
+  { en: 'clean', he: 'נקי' },
+  { en: 'dirty', he: 'מלוכלך' },
+  { en: 'tall', he: 'גבוה' },
+  { en: 'short', he: 'קצר' },
+  { en: 'full', he: 'מלא' },
+  { en: 'empty', he: 'ריק' },
+  { en: 'rich', he: 'עשיר' },
+  { en: 'poor', he: 'עני' },
+  { en: 'warm', he: 'חם' },
+  { en: 'cool', he: 'קריר' },
+  { en: 'today', he: 'היום' },
+  { en: 'tomorrow', he: 'מחר' },
+  { en: 'yesterday', he: 'אתמול' },
+  { en: 'morning', he: 'בוקר' },
+  { en: 'afternoon', he: 'אחר' },
+  { en: 'evening', he: 'ערב' },
+  { en: 'night', he: 'לילה' },
+  { en: 'soon', he: 'בקרוב' },
+  { en: 'later', he: 'מאוחר' },
+  { en: 'now', he: 'עכשיו' },
+  { en: 'before', he: 'לפני' },
+  { en: 'after', he: 'אחרי' },
+  { en: 'tired', he: 'עייף' },
+  { en: 'hungry', he: 'רעב' },
+  { en: 'thirsty', he: 'צמא' },
+  { en: 'sick', he: 'חולה' },
+  { en: 'fine', he: 'בסדר' },
+  { en: 'great', he: 'נהדר' },
+  { en: 'beautiful', he: 'יפה' },
+  { en: 'ugly', he: 'מכוער' },
+  { en: 'nice', he: 'נחמד' },
+  { en: 'angry', he: 'כועס' },
+  { en: 'scared', he: 'מפוחד' },
+  { en: 'excited', he: 'נרגש' },
+  { en: 'bored', he: 'משועמם' },
+  { en: 'phone', he: 'טלפון' },
+  { en: 'computer', he: 'מחשב' },
+  { en: 'television', he: 'טלוויזיה' },
+  { en: 'key', he: 'מפתח' },
+  { en: 'bag', he: 'תיק' },
+  { en: 'money', he: 'כסף' },
+  { en: 'coin', he: 'מטבע' },
+  { en: 'gift', he: 'מתנה' },
+  { en: 'card', he: 'כרטיס' },
+  { en: 'letter', he: 'מכתב' },
+  { en: 'picture', he: 'תמונה' },
+  { en: 'mirror', he: 'מראה' },
+  { en: 'wall', he: 'קיר' },
+  { en: 'floor', he: 'רצפה' },
+  { en: 'ceiling', he: 'תקרה' },
+  { en: 'clean', he: 'לנקות' },
+  { en: 'wash', he: 'לשטוף' },
+  { en: 'cook', he: 'לבשל' },
+  { en: 'drive', he: 'לנהוג' },
+  { en: 'wait', he: 'לחכות' },
+  { en: 'use', he: 'להשתמש' },
+  { en: 'find', he: 'למצוא' },
+  { en: 'lose', he: 'לאבד' },
+  { en: 'show', he: 'להראות' },
+  { en: 'think', he: 'לחשוב' },
+  { en: 'feel', he: 'להרגיש' },
+  { en: 'remember', he: 'לזכור' },
+  { en: 'forget', he: 'לשכוח' },
+  { en: 'believe', he: 'להאמין' },
+  { en: 'enjoy', he: 'ליהנות' },
+  { en: 'sing', he: 'לשיר' },
+  { en: 'dance', he: 'לרקוד' },
+  { en: 'sit', he: 'לשבת' },
+  { en: 'stand', he: 'לעמוד' },
+  { en: 'turn', he: 'לפנות' },
+  { en: 'left', he: 'שמאל' },
+  { en: 'right', he: 'ימין' },
+  { en: 'up', he: 'למעלה' },
+  { en: 'down', he: 'למטה' },
+  { en: 'inside', he: 'בפנים' },
+  { en: 'outside', he: 'בחוץ' },
+  { en: 'front', he: 'קדימה' },
+  { en: 'back', he: 'אחורה' },
+  { en: 'near', he: 'קרוב' },
+  { en: 'far', he: 'רחוק' },
+  { en: 'here', he: 'כאן' },
+  { en: 'there', he: 'שם' },
+  { en: 'everywhere', he: 'בכל מקום' },
+  { en: 'nowhere', he: 'שום מקום' },
+  { en: 'corner', he: 'פינה' },
+  { en: 'center', he: 'מרכז' },
+  { en: 'sun', he: 'שמש' },
+  { en: 'moon', he: 'ירח' },
+  { en: 'star', he: 'כוכב' },
+  { en: 'cloud', he: 'ענן' },
+  { en: 'rain', he: 'גשם' },
+  { en: 'snow', he: 'שלג' },
+  { en: 'wind', he: 'רוח' },
+  { en: 'sky', he: 'שמיים' },
+  { en: 'tree', he: 'עץ' },
+  { en: 'flower', he: 'פרח' },
+  { en: 'grass', he: 'דשא' },
+  { en: 'river', he: 'נהר' },
+  { en: 'sea', he: 'ים' },
+  { en: 'mountain', he: 'הר' },
+  { en: 'forest', he: 'יער' },
+  { en: 'expensive', he: 'יקר' },
+  { en: 'cheap', he: 'זול' },
+  { en: 'expensive', he: 'יקר' },
+  { en: 'cheap', he: 'זול' },
+  { en: 'important', he: 'חשוב' },
+  { en: 'interesting', he: 'מעניין' },
+  { en: 'famous', he: 'מפורסם' },
+  { en: 'necessary', he: 'הכרחי' },
+  { en: 'possible', he: 'אפשרי' },
+  { en: 'impossible', he: 'בלתי אפשרי' },
+  { en: 'dangerous', he: 'מסוכן' },
+  { en: 'safe', he: 'בטוח' },
+  { en: 'loud', he: 'רועש' },
+  { en: 'quiet', he: 'שקט' },
+  { en: 'lucky', he: 'בר מזל' },
+  { en: 'unlucky', he: 'חסר' },
+  { en: 'head', he: 'ראש' },
+  { en: 'face', he: 'פנים' },
+  { en: 'eyes', he: 'עיניים' },
+  { en: 'nose', he: 'אף' },
+  { en: 'mouth', he: 'פה' },
+  { en: 'ears', he: 'אוזניים' },
+  { en: 'hands', he: 'ידיים' },
+  { en: 'fingers', he: 'אצבעות' },
+  { en: 'arms', he: 'זרועות' },
+  { en: 'legs', he: 'רגליים' },
+  { en: 'feet', he: 'כפות' },
+  { en: 'hair', he: 'שיער' },
+  { en: 'heart', he: 'לב' },
+  { en: 'skin', he: 'עור' },
+  { en: 'stomach', he: 'בטן' },
+  { en: 'train', he: 'רכבת' },
+  { en: 'airplane', he: 'מטוס' },
+  { en: 'boat', he: 'סירה' },
+  { en: 'farm', he: 'חווה' },
+  { en: 'market', he: 'שוק' },
+  { en: 'museum', he: 'מוזיאון' },
+  { en: 'hotel', he: 'מלון' },
+  { en: 'bridge', he: 'גשר' },
+  { en: 'castle', he: 'טירה' },
+  { en: 'tower', he: 'מגדל' },
+  { en: 'library', he: 'ספרייה' },
+  { en: 'theater', he: 'תיאטרון' }, 
+  { en: 'stadium', he: 'אצטדיון' }, 
+  { en: 'hello', he: 'שלום' },
+  { en: 'goodbye', he: 'להתראות' }, 
+  { en: 'please', he: 'בבקשה' },
+  { en: 'thank you', he: 'תודה' },
+  { en: 'sorry', he: 'סליחה' },
+  { en: 'yes', he: 'כן' },
+  { en: 'no', he: 'לא' },
+  { en: 'maybe', he: 'אולי' },
+  { en: 'sure', he: 'בטח' },
+  { en: 'of course', he: 'כמובן' },
+  { en: 'really', he: 'באמת' },
+  { en: 'probably', he: 'כנראה' },
+  { en: 'answer', he: 'לענות' },
+  { en: 'ask', he: 'לשאול' },
+  { en: 'borrow', he: 'ללוות' },
+  { en: 'lend', he: 'להלוות' },
+  { en: 'tell', he: 'לספר' },
+  { en: 'explain', he: 'להסביר' },
+  { en: 'discuss', he: 'לדון' },
+  { en: 'agree', he: 'להסכים' },
+  { en: 'disagree', he: 'לא מסכים' },
+  { en: 'invite', he: 'להזמין' },
+  { en: 'accept', he: 'לקבל' },
+  { en: 'refuse', he: 'לסרב' },
+  { en: 'promise', he: 'להבטיח' },
+  { en: 'suggest', he: 'להציע' },
+  { en: 'order', he: 'להזמין' },
+  { en: 'decide', he: 'להחליט' },
+  { en: 'choose', he: 'לבחור' },
+  { en: 'friendly', he: 'ידידותי' },
+  { en: 'unfriendly', he: 'לא חברותי' },
+  { en: 'honest', he: 'ישר' },
+  { en: 'dishonest', he: 'לא ישר' },
+  { en: 'busy', he: 'עסוק' },
+  { en: 'lazy', he: 'עצלן' },
+  { en: 'serious', he: 'רציני' },
+  { en: 'funny', he: 'מצחיק' },
+  { en: 'helpful', he: 'מועיל' },
+  { en: 'useless', he: 'חסר ערך' },
+  { en: 'soft', he: 'רך' },
+  { en: 'hard', he: 'קשה' },
+  { en: 'wet', he: 'רטוב' },
+  { en: 'dry', he: 'יבש' },
+  { en: 'idea', he: 'רעיון' },
+  { en: 'problem', he: 'בעיה' },
+  { en: 'solution', he: 'פתרון' },
+  { en: 'opinion', he: 'דעה' },
+  { en: 'reason', he: 'סיבה' },
+  { en: 'result', he: 'תוצאה' },
+  { en: 'difference', he: 'הבדל' },
+  { en: 'experience', he: 'חוויה' },
+  { en: 'success', he: 'הצלחה' },
+  { en: 'failure', he: 'כישלון' },
+  { en: 'mistake', he: 'טעות' },
+  { en: 'plan', he: 'תכנית' },
+  { en: 'goal', he: 'מטרה' },
+  { en: 'grow', he: 'לגדול' },
+  { en: 'change', he: 'להשתנות' },
+  { en: 'improve', he: 'לשפר' },
+  { en: 'win', he: 'לנצח' },
+  { en: 'lose', he: 'להפסיד' },
+  { en: 'wait', he: 'לחכות' },
+  { en: 'worry', he: 'לדאוג' },
+  { en: 'hope', he: 'לקוות' },
+  { en: 'guess', he: 'לנחש' },
+  { en: 'depend', he: 'לתלות' },
+  { en: 'include', he: 'לכלול' },
+  { en: 'continue', he: 'להמשיך' },
+  { en: 'stop', he: 'לעצור' },
+  { en: 'finish', he: 'לסיים' },
+  { en: 'first', he: 'ראשון' },
+  { en: 'last', he: 'אחרון' },
+  { en: 'together', he: 'ביחד' },
+  { en: 'alone', he: 'לבד' },
+  { en: 'year', he: 'שנה' },
+  { en: 'month', he: 'חודש' },
+  { en: 'week', he: 'שבוע' },
+  { en: 'day', he: 'יום' },
+  { en: 'hour', he: 'שעה' },
+  { en: 'minute', he: 'דקה' },
+  { en: 'second', he: 'שניה' },
+  { en: 'our', he: 'שלנו' },
+  { en: 'your', he: 'שלך/שלכם' },
+];
+
+
+    let wordPairs = [];
+    let score = 0;
+    let correctAnswers = [];
+    let wrongAnswers = [];
+    let currentQuestion = 0;
+    let translationDirection = 'en2he';
+
+    const correctSound = document.getElementById('sound-correct');
+    const wrongSound = document.getElementById('sound-wrong');
+
+    document.getElementById('startBtn').onclick = function startGame() {
+      score = 0;
+      correctAnswers = [];
+      wrongAnswers = [];
+      currentQuestion = 0;
+      translationDirection = document.getElementById('direction').value;
+      wordPairs = [...allWords].sort(() => 0.5 - Math.random()).slice(0, 10);
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('endScreen').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+      nextQuestion();
+    };
+
+    function nextQuestion() {
+      const synth = window.speechSynthesis;
+      if (currentQuestion >= wordPairs.length) {
+        endGame();
+        return;
+      }
+      const pair = wordPairs[currentQuestion];
+      const question = translationDirection === 'en2he' ? pair.en : pair.he;
+      const correct = translationDirection === 'en2he' ? pair.he : pair.en;
+
+      document.getElementById('quizWord').textContent = question;
+      if (translationDirection === 'en2he' && synth) {
+        const utter = new SpeechSynthesisUtterance(question);
+        utter.lang = 'en-US';
+        synth.cancel();
+        synth.speak(utter);
+      }
+      document.getElementById('result').textContent = '';
+      document.getElementById('progress').textContent = `שאלה ${currentQuestion + 1} מתוך ${wordPairs.length}`;
+
+      const options = [correct];
+      while (options.length < 3) {
+        const candidate = allWords[Math.floor(Math.random() * allWords.length)];
+        const distractor = translationDirection === 'en2he' ? candidate.he : candidate.en;
+        if (!options.includes(distractor) && distractor !== correct) {
+          options.push(distractor);
+        }
+      }
+      shuffle(options);
+
+      const optionsDiv = document.getElementById('options');
+      optionsDiv.innerHTML = '';
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.textContent = opt;
+        btn.onclick = () => checkAnswer(btn, correct);
+        optionsDiv.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(button, correctAnswer) {
+      const buttons = document.querySelectorAll('#options button');
+      buttons.forEach(btn => {
+  btn.disabled = true;
+  if (btn.textContent === correctAnswer) {
+    btn.classList.add('correct');
+  } else if (btn === button) {
+    btn.classList.add('wrong');
+  }
+});
+      const pair = wordPairs[currentQuestion];
+      const questionWord = translationDirection === 'en2he' ? pair.en : pair.he;
+      const correctWord = translationDirection === 'en2he' ? pair.he : pair.en;
+
+      if (button.textContent === correctAnswer) {
+        score++;
+        correctSound.play();
+        correctAnswers.push({ q: questionWord, a: correctWord });
+        document.getElementById('result').textContent = 'נכון!';
+        if (translationDirection === 'he2en') {
+          const synth = window.speechSynthesis;
+          const utter = new SpeechSynthesisUtterance(correctAnswer);
+          utter.lang = 'en-US';
+          synth.cancel();
+          synth.speak(utter);
+        }
+        setTimeout(() => {
+          currentQuestion++;
+          nextQuestion();
+        }, 1500);
+      } else {
+        wrongSound.play();
+        if (translationDirection === 'he2en') {
+          const synth = window.speechSynthesis;
+          const utter = new SpeechSynthesisUtterance(correctAnswer);
+          utter.lang = 'en-US';
+          synth.cancel();
+          synth.speak(utter);
+        }
+        wrongAnswers.push({ q: questionWord, a: correctWord });
+        document.getElementById('result').innerHTML = `לא נכון.<br>התשובה הנכונה היא: <strong>${correctAnswer}</strong>`;
+        setTimeout(() => {
+          currentQuestion++;
+          nextQuestion();
+        }, 4000);
+      }
+    }
+
+    function endGame() {
+      const happySound = document.getElementById('sound-happy');
+      const veryHappySound = document.getElementById('sound-very-happy');
+      if (score === wordPairs.length && veryHappySound) {
+        veryHappySound.play();
+      } else if (score >= 8 && happySound) {
+        happySound.play();
+      }
+      document.getElementById('game').style.display = 'none';
+      let medal = '';
+      if (score === 10) {
+        medal = '🥇';
+      } else if (score >= 8) {
+        medal = '🥈';
+      } else if (score >= 5) {
+        medal = '🥉';
+      }
+      let html = `<h2>המשחק הסתיים</h2><p style='color:${score >= wordPairs.length * 0.7 ? "green" : "red"}'>הציון שלך: ${score} מתוך ${wordPairs.length} ${medal}</p>`;
+      html += '<h3>מילים שידעת:</h3><ul>' + correctAnswers.map(p => `<li>${p.q} - ${p.a}</li>`).join('') + '</ul>';
+      html += '<h3>מילים שלא ידעת:</h3><ul>' + wrongAnswers.map(p => `<li>${p.q} - ${p.a}</li>`).join('') + '</ul>';
+      html += '<button onclick="location.reload()">משחק חדש</button>';
+      html += '<button onclick="retryWrong()">נסה שוב את המילים שלא ידעת</button>';
+      html += `<br><a href='https://wa.me/?text=שיחקתי%20בחידון%20תרגום%20וקיבלתי%20${score}%20מתוך%20${wordPairs.length}!%20נסה%20גם%20אתה!' target='_blank' style='display:inline-block; margin-top:15px; font-size:1em; color:white; background:#25D366; padding:10px 20px; border-radius:8px; text-decoration:none;'>שתף בוואטסאפ</a>`;
+document.getElementById('endScreen').innerHTML = html;
+      document.getElementById('endScreen').style.display = 'block';
+    }
+
+    function retryWrong() {
+      if (wrongAnswers.length === 0) {
+        alert('כל הכבוד! אין מילים לחזרה.');
+        return;
+      }
+      wordPairs = wrongAnswers.map(p => {
+        return translationDirection === 'en2he'
+          ? { en: p.q, he: p.a }
+          : { en: p.a, he: p.q };
+      });
+      score = 0;
+      correctAnswers = [];
+      wrongAnswers = [];
+      currentQuestion = 0;
+      document.getElementById('endScreen').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+      nextQuestion();
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+  </script>
+  <audio id="sound-happy" src="https://cdn.pixabay.com/download/audio/2022/02/28/audio_594ca25b24.mp3?filename=success-fanfare-trumpets-6185.mp3"></audio>
+  <audio id="sound-very-happy" src="https://cdn.pixabay.com/download/audio/2022/03/03/audio_0317023917.mp3?filename=kids-cheering-01-121103.mp3"></audio>
 </body>
 </html>
