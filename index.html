@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he">
 <head>
   <meta charset="UTF-8">
   <title>משחק המילים</title>
+  <link rel="manifest" href="manifest.json">
   <style>
     body {
   font-size: 4.5vw;
@@ -20,12 +21,21 @@
   font-family: 'Assistant', sans-serif;
   text-align: center;
 }
+    #game, #startScreen, #endScreen {
+      width: 100vw;
+      height: 100vh;
+      padding: 0 5vw;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 4vh;
+    }
     .word {
       font-size: 2.5em;
       font-weight: bold;
       color: #0d47a1;
-      font-size: 2em;
-      margin: 20px;
     }
     .options button,
     #startScreen button,
@@ -48,96 +58,120 @@
     .correct {
       background-color: #4CAF50 !important;
       color: white;
+      animation: pulse-green 0.6s ease;
     }
     .wrong {
       background-color: #f44336 !important;
       color: white;
+      animation: shake-red 0.4s ease;
     }
-    .correct {
-    animation: pulse-green 0.6s ease;
-  }
-
-  .wrong {
-    animation: shake-red 0.4s ease;
-  }
-
-  @keyframes pulse-green {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-  }
-
-  @keyframes shake-red {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    50% { transform: translateX(5px); }
-    75% { transform: translateX(-5px); }
-  }
-#game, #startScreen, #endScreen {
-  width: 100vw;
-  height: 100vh;
-  padding: 0 5vw;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 4vh;
+    @keyframes pulse-green {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    @keyframes shake-red {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+    }
+  .mode-option {
+  display: inline-block;
+  position: relative;
+  margin: 10px;
+  font-size: 1.5em;
+  background: #fff;
+  border: 2px solid #444;
+  border-radius: 12px;
+  padding: 15px 25px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.mode-option input[type="radio"]:checked + span {
+  font-weight: bold;
+  color: #007BFF;
+  background-color: #e0f0ff;
+  border: 2px solid #007BFF;
+  border-radius: 8px;
+  padding: 10px 20px;
+  display: inline-block;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
+}
+.mode-option input[type="radio"] {
+  opacity: 0;
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.mode-option span {
+  pointer-events: auto;
+  user-select: none;
+  display: inline-block;
+  padding: 10px 20px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.mode-option input {
+  margin-left: 10px;
+  transform: scale(1.5);
+}
+.mode-option:hover {
+  background-color: #f0f8ff;
+  border-color: #007BFF;
 }
 </style>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600&display=swap" rel="stylesheet">
-<link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-    navigator.serviceWorker.register('service-worker.js');
-    });
-  }
-</script>
 </head>
 <body>
+<div id="startScreen">
+  <h1>משחק תרגום מילים</h1>
+  <label>שם שחקן (לא חובה):</label><br>
+  <input id="playerName" type="text" maxlength="20" placeholder="למשל: נבו" style="font-size: 2em; padding: 10px 20px; border-radius: 10px;"><br><br>
 
+  <label class="mode-option">
+  <input type="radio" name="mode" value="random" checked><span>🎲 הגרל מילים</span>
+</label>
+  <label class="mode-option">
+  <input type="radio" name="mode" value="custom"><span>✍️ מילים להכתבה</span>
+</label><br><br>
+
+  <div id="customInput" style="display:none;">
+    <label>שם להכתבה (לשימוש חוזר):</label><br>
+    <input type="text" id="customSetName" maxlength="30" style="font-size:1.2em;"><br><br>
+    <label>או בחר שם מהשאלות השמורות:</label><br>
+    <select id="savedSets" style="font-size:1.2em;"></select>
+    <button onclick="loadSavedSet()">טען</button>
+    <button onclick="deleteSavedSet()" style="background:#f44336; color:white; margin-right:10px;">🗑️ מחק</button><br><br>
+    <label>כמה זוגות מילים תרצה להזין?</label><br>
+    <input type="number" id="customCount" min="1" max="50" style="font-size:1.5em; width:80px;"><br>
+    <button onclick="generateCustomTable()">צור טבלה</button>
+    <div id="customTable"></div>
+  </div><br>
+
+  <label for="direction">בחר כיוון תרגום:</label><br>
+  <select id="direction" style="font-size: 2em; padding: 10px 20px; border-radius: 10px;">
+    <option value="en2he">אנגלית לעברית</option>
+    <option value="he2en">עברית לאנגלית</option>
+  </select><br><br>
+
+  <button id="startBtn">התחל משחק</button>
 </div>
-  <h1>משחק המילים</h1>
-  <div id="startScreen">
-    <label for="playerName">בחר שם שחקן:</label><br>
-    <select id="playerName" style="font-size: 2em; padding: 10px 20px; border-radius: 10px;">
-      <option value="אורי">אורי</option>
-      <option value="אלה">אלה</option>
-      <option value="שחר">שחר</option>
-      <option value="נבו">נבו</option>
-    </select>
-    <br><br>
-    <select id="direction" style="font-size: 2em; padding: 10px 20px; border-radius: 10px;">
-      <option value="en2he">אנגלית לעברית</option>
-      <option value="he2en">עברית לאנגלית</option>
-    </select>
-    <br><br>
-    <button id="startBtn">התחל משחק</button>
-  </div>
-
-  <div id="game" style="display:none;">
-    <div id="progress"></div>
-    <div class="word" id="quizWord"></div>
-    <div class="options" id="options"></div>
-    <div id="result"></div>
-  </div>
-
-  <div id="endScreen" style="display:none;"></div>
-
-  <audio id="sound-correct" preload="auto">
+<div id="game" style="display:none;">
+  <div id="progress"></div>
+  <div class="word" id="quizWord"></div>
+  <div class="options" id="options"></div>
+  <div id="result"></div>
+</div>
+<div id="endScreen" style="display:none;"></div>
+<audio id="sound-correct" preload="auto">
   <source src="https://cdn.pixabay.com/download/audio/2022/02/15/audio_94b4a2b6c1.mp3?filename=correct-6033.mp3" type="audio/mpeg">
 </audio>
-  <audio id="sound-wrong" preload="auto">
+<audio id="sound-wrong" preload="auto">
   <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c43b3b5b63.mp3?filename=error-2-123105.mp3" type="audio/mpeg">
 </audio>
-
-  <script>
-   const allWords = [
+<audio id="sound-happy" src="https://cdn.pixabay.com/download/audio/2022/02/28/audio_594ca25b24.mp3?filename=success-fanfare-trumpets-6185.mp3"></audio>
+<audio id="sound-very-happy" src="https://cdn.pixabay.com/download/audio/2022/03/03/audio_0317023917.mp3?filename=kids-cheering-01-121103.mp3"></audio>
+<script>
+let allWords = [
   { en: 'I', he: 'אני' },
   { en: 'you', he: 'אתה/את' },
   { en: 'he', he: 'הוא' },
@@ -518,175 +552,199 @@
   { en: 'our', he: 'שלנו' },
   { en: 'your', he: 'שלך/שלכם' },
 ];
-
-
-    let wordPairs = [];
-    let score = 0;
+let wordPairs = [];
+let customWords = [];
+let score = 0;
+let currentIndex = 0;
+let correctAnswers = [];
+let wrongAnswers = [];
 let playerName = '';
-    let correctAnswers = [];
-    let wrongAnswers = [];
-    let currentQuestion = 0;
-    let translationDirection = 'en2he';
+let translationDirection = 'en2he';
 
-    const correctSound = document.getElementById('sound-correct');
-    const wrongSound = document.getElementById('sound-wrong');
 
-    document.getElementById('startBtn').onclick = function startGame() {
-      score = 0;
-      correctAnswers = [];
-      wrongAnswers = [];
-      currentQuestion = 0;
-      translationDirection = document.getElementById('direction').value;
-      playerName = document.getElementById('playerName').value;
-      wordPairs = [...allWords].sort(() => 0.5 - Math.random()).slice(0, 10);
-      document.getElementById('startScreen').style.display = 'none';
-      document.getElementById('endScreen').style.display = 'none';
-      document.getElementById('game').style.display = 'block';
-      nextQuestion();
-    };
 
-    function nextQuestion() {
-      const synth = window.speechSynthesis;
-      if (currentQuestion >= wordPairs.length) {
-        endGame();
-        return;
-      }
-      const pair = wordPairs[currentQuestion];
-      const question = translationDirection === 'en2he' ? pair.en : pair.he;
-      const correct = translationDirection === 'en2he' ? pair.he : pair.en;
-
-      document.getElementById('quizWord').textContent = question;
-      if (translationDirection === 'en2he' && synth) {
-        const utter = new SpeechSynthesisUtterance(question);
-        utter.lang = 'en-US';
-        synth.cancel();
-        synth.speak(utter);
-      }
-      document.getElementById('result').textContent = '';
-      document.getElementById('progress').textContent = `שאלה ${currentQuestion + 1} מתוך ${wordPairs.length}`;
-
-      const options = [correct];
-      while (options.length < 3) {
-        const candidate = allWords[Math.floor(Math.random() * allWords.length)];
-        const distractor = translationDirection === 'en2he' ? candidate.he : candidate.en;
-        if (!options.includes(distractor) && distractor !== correct) {
-          options.push(distractor);
-        }
-      }
-      shuffle(options);
-
-      const optionsDiv = document.getElementById('options');
-      optionsDiv.innerHTML = '';
-      options.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.textContent = opt;
-        btn.onclick = () => checkAnswer(btn, correct);
-        optionsDiv.appendChild(btn);
-      });
-    }
-
-    function checkAnswer(button, correctAnswer) {
-      const buttons = document.querySelectorAll('#options button');
-      buttons.forEach(btn => {
-  btn.disabled = true;
-  if (btn.textContent === correctAnswer) {
-    btn.classList.add('correct');
-  } else if (btn === button) {
-    btn.classList.add('wrong');
+document.getElementById('startBtn').onclick = function () {
+  playerName = document.getElementById('playerName').value.trim() || 'השחקן';
+  translationDirection = document.getElementById('direction').value;
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  if (mode === 'custom' && customWords.length > 0) {
+    wordPairs = [...customWords];
+  } else {
+    wordPairs = [...allWords].sort(() => 0.5 - Math.random()).slice(0, 10);
   }
+  score = 0;
+  currentIndex = 0;
+  correctAnswers = [];
+  wrongAnswers = [];
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('game').style.display = 'flex';
+  nextQuestion();
+};
+
+function nextQuestion() {
+  document.getElementById('result').textContent = '';
+  if (currentIndex >= wordPairs.length) return endGame();
+  const current = wordPairs[currentIndex];
+  const question = translationDirection === 'en2he' ? current.en : current.he;
+  const correct = translationDirection === 'en2he' ? current.he : current.en;
+  document.getElementById('quizWord').textContent = question;
+  const synth = window.speechSynthesis;
+  if (translationDirection === 'en2he') {
+    const utter = new SpeechSynthesisUtterance(question);
+    utter.lang = 'en-US';
+    synth.cancel();
+    synth.speak(utter);
+  }
+  let options = [correct];
+  while (options.length < 3) {
+    const rand = wordPairs[Math.floor(Math.random() * wordPairs.length)];
+    const distractor = translationDirection === 'en2he' ? rand.he : rand.en;
+    if (!options.includes(distractor)) options.push(distractor);
+  }
+  options.sort(() => Math.random() - 0.5);
+  const container = document.getElementById('options');
+  container.innerHTML = '';
+  options.forEach(option => {
+    const btn = document.createElement('button');
+    btn.textContent = option;
+    btn.onclick = () => checkAnswer(btn, correct);
+    container.appendChild(btn);
+  });
+  document.getElementById('progress').textContent = `${playerName}, שאלה ${currentIndex + 1} מתוך ${wordPairs.length}`;
+}
+
+function checkAnswer(button, correctAnswer) {
+  const buttons = document.querySelectorAll('#options button');
+  buttons.forEach(btn => btn.disabled = true);
+  if (button.textContent === correctAnswer) {
+    button.classList.add('correct');
+    document.getElementById('sound-correct').play();
+    score++;
+    correctAnswers.push(wordPairs[currentIndex]);
+    document.getElementById('result').textContent = `${playerName}, כל הכבוד! ענית נכון!`;
+    if (translationDirection === 'he2en') {
+      const utter = new SpeechSynthesisUtterance(correctAnswer);
+      utter.lang = 'en-US';
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    }
+  } else {
+    button.classList.add('wrong');
+    document.getElementById('sound-wrong').play();
+    wrongAnswers.push(wordPairs[currentIndex]);
+    document.getElementById('result').innerHTML = `${playerName}, לא נכון.<br>התשובה הנכונה היא: <strong>${correctAnswer}</strong>`;
+    if (translationDirection === 'he2en') {
+      const utter = new SpeechSynthesisUtterance(correctAnswer);
+      utter.lang = 'en-US';
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    }
+  }
+  setTimeout(() => {
+    currentIndex++;
+    nextQuestion();
+  }, 4000);
+}
+
+function endGame() {
+  document.getElementById('game').style.display = 'none';
+  let medal = '';
+  if (score === wordPairs.length) document.getElementById('sound-very-happy').play(), medal = '🥇';
+  else if (score >= 8) document.getElementById('sound-happy').play(), medal = '🥈';
+  else if (score >= 5) medal = '🥉';
+  let html = `<h2>המשחק הסתיים</h2><p style='color:${score >= wordPairs.length * 0.7 ? "green" : "red"}'>${playerName}, הציון שלך: ${score} מתוך ${wordPairs.length} ${medal}</p>`;
+  if (correctAnswers.length) {
+    html += '<h3>מילים שענית נכון:</h3><ul>' + correctAnswers.map(w => `<li>${w.en} – ${w.he}</li>`).join('') + '</ul>';
+  }
+  if (wrongAnswers.length) {
+    html += '<h3>מילים שלא ענית נכון:</h3><ul>' + wrongAnswers.map(w => `<li>${w.en} – ${w.he}</li>`).join('') + '</ul>';
+  }
+  html += `<br><a href='https://wa.me/?text=${playerName}%20שיחק%20בחידון%20תרגום%20וקיבל%20${score}%20מתוך%20${wordPairs.length}!' target='_blank' style='display:inline-block; margin-top:15px; font-size:1em; color:white; background:#25D366; padding:10px 20px; border-radius:8px; text-decoration:none;'>שתף בוואטסאפ</a>`;
+  html += '<br><button onclick="location.reload()">משחק חדש</button>';
+  if (wrongAnswers.length) html += '<button onclick="retryWrong()">נסה שוב את המילים שלא ידעת</button>';
+  document.getElementById('endScreen').innerHTML = html;
+  document.getElementById('endScreen').style.display = 'block';
+}
+
+function retryWrong() {
+  wordPairs = wrongAnswers;
+  currentIndex = 0;
+  score = 0;
+  correctAnswers = [];
+  wrongAnswers = [];
+  document.getElementById('endScreen').style.display = 'none';
+  document.getElementById('game').style.display = 'flex';
+  nextQuestion();
+}
+
+function generateCustomTable() {
+  const count = parseInt(document.getElementById('customCount').value);
+  const container = document.getElementById('customTable');
+  container.innerHTML = '<table><tr><th>English</th><th>Hebrew</th></tr>';
+  for (let i = 0; i < count; i++) {
+    container.innerHTML += `<tr><td><input type='text' id='en${i}'></td><td><input type='text' id='he${i}'></td></tr>`;
+  }
+  container.innerHTML += `</table><br><button onclick='saveCustomWords()'>שמור</button>`;
+}
+
+function saveCustomWords() {
+  const count = parseInt(document.getElementById('customCount').value);
+  const name = document.getElementById('customSetName').value.trim();
+  if (!name) return alert('יש להזין שם להכתבה.');
+  customWords = [];
+  for (let i = 0; i < count; i++) {
+    const en = document.getElementById(`en${i}`).value.trim();
+    const he = document.getElementById(`he${i}`).value.trim();
+    if (en && he) customWords.push({ en, he });
+  }
+  if (customWords.length > 0) {
+    localStorage.setItem('quizSet_' + name, JSON.stringify(customWords));
+    updateSavedSets();
+    alert('השאלות נשמרו בשם: ' + name);
+  }
+}
+
+function updateSavedSets() {
+  const select = document.getElementById('savedSets');
+  select.innerHTML = '';
+  for (let key in localStorage) {
+    if (key.startsWith('quizSet_')) {
+      const name = key.replace('quizSet_', '');
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      select.appendChild(option);
+    }
+  }
+}
+
+function loadSavedSet() {
+  const name = document.getElementById('savedSets').value;
+  const data = localStorage.getItem('quizSet_' + name);
+  if (data) {
+    customWords = JSON.parse(data);
+    alert('ההכתבה נטענה: ' + name);
+  }
+}
+
+function deleteSavedSet() {
+  const name = document.getElementById('savedSets').value;
+  if (!name) return;
+  const confirmDelete = confirm('האם אתה בטוח שברצונך למחוק את ההכתבה בשם ' + name + '?');
+  if (confirmDelete) {
+    localStorage.removeItem('quizSet_' + name);
+    updateSavedSets();
+    alert('ההכתבה נמחקה בהצלחה.');
+  }
+}
+
+document.querySelectorAll('input[name="mode"]').forEach(radio => {
+  radio.addEventListener('change', function () {
+    document.getElementById('customInput').style.display = this.value === 'custom' ? 'block' : 'none';
+  });
 });
-      const pair = wordPairs[currentQuestion];
-      const questionWord = translationDirection === 'en2he' ? pair.en : pair.he;
-      const correctWord = translationDirection === 'en2he' ? pair.he : pair.en;
 
-      if (button.textContent === correctAnswer) {
-        score++;
-        correctSound.play();
-        correctAnswers.push({ q: questionWord, a: correctWord });
-        document.getElementById('result').textContent = `${playerName}, כל הכבוד! ענית נכון!`;
-        if (translationDirection === 'he2en') {
-          const synth = window.speechSynthesis;
-          const utter = new SpeechSynthesisUtterance(correctAnswer);
-          utter.lang = 'en-US';
-          synth.cancel();
-          synth.speak(utter);
-        }
-        setTimeout(() => {
-          currentQuestion++;
-          nextQuestion();
-        }, 1500);
-      } else {
-        wrongSound.play();
-        if (translationDirection === 'he2en') {
-          const synth = window.speechSynthesis;
-          const utter = new SpeechSynthesisUtterance(correctAnswer);
-          utter.lang = 'en-US';
-          synth.cancel();
-          synth.speak(utter);
-        }
-        wrongAnswers.push({ q: questionWord, a: correctWord });
-        document.getElementById('result').innerHTML = `${playerName}, לא נכון.<br>התשובה הנכונה היא: <strong>${correctAnswer}</strong>`;
-        setTimeout(() => {
-          currentQuestion++;
-          nextQuestion();
-        }, 4000);
-      }
-    }
-
-    function endGame() {
-      const happySound = document.getElementById('sound-happy');
-      const veryHappySound = document.getElementById('sound-very-happy');
-      if (score === wordPairs.length && veryHappySound) {
-        veryHappySound.play();
-      } else if (score >= 8 && happySound) {
-        happySound.play();
-      }
-      document.getElementById('game').style.display = 'none';
-      let medal = '';
-      if (score === 10) {
-        medal = '🥇';
-      } else if (score >= 8) {
-        medal = '🥈';
-      } else if (score >= 5) {
-        medal = '🥉';
-      }
-      let html = `<h2>המשחק הסתיים</h2><p style='color:${score >= wordPairs.length * 0.7 ? "green" : "red"}'>${playerName}, הציון שלך: 'הציון שלך'}: ${score} מתוך ${wordPairs.length} ${medal}</p>`;
-      html += '<h3>מילים שידעת:</h3><ul>' + correctAnswers.map(p => `<li>${p.q} - ${p.a}</li>`).join('') + '</ul>';
-      html += '<h3>מילים שלא ידעת:</h3><ul>' + wrongAnswers.map(p => `<li>${p.q} - ${p.a}</li>`).join('') + '</ul>';
-      html += '<button onclick="location.reload()">משחק חדש</button>';
-      html += '<button onclick="retryWrong()">נסה שוב את המילים שלא ידעת</button>';
-      html += `<br><a href='https://wa.me/?text=${playerName}%20שיחק%20בחידון%20תרגום%20וקיבל%20${score}%20מתוך%20${wordPairs.length}!%20נסה%20גם%20אתה!' target='_blank' style='display:inline-block; margin-top:15px; font-size:1em; color:white; background:#25D366; padding:10px 20px; border-radius:8px; text-decoration:none;'>שתף בוואטסאפ</a>`;
-document.getElementById('endScreen').innerHTML = html;
-      document.getElementById('endScreen').style.display = 'block';
-    }
-
-    function retryWrong() {
-      if (wrongAnswers.length === 0) {
-        alert('כל הכבוד! אין מילים לחזרה.');
-        return;
-      }
-      wordPairs = wrongAnswers.map(p => {
-        return translationDirection === 'en2he'
-          ? { en: p.q, he: p.a }
-          : { en: p.a, he: p.q };
-      });
-      score = 0;
-      correctAnswers = [];
-      wrongAnswers = [];
-      currentQuestion = 0;
-      document.getElementById('endScreen').style.display = 'none';
-      document.getElementById('game').style.display = 'block';
-      nextQuestion();
-    }
-
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
-  </script>
-  <audio id="sound-happy" src="https://cdn.pixabay.com/download/audio/2022/02/28/audio_594ca25b24.mp3?filename=success-fanfare-trumpets-6185.mp3"></audio>
-  <audio id="sound-very-happy" src="https://cdn.pixabay.com/download/audio/2022/03/03/audio_0317023917.mp3?filename=kids-cheering-01-121103.mp3"></audio>
+window.addEventListener('DOMContentLoaded', updateSavedSets);
+</script>
 </body>
 </html>
