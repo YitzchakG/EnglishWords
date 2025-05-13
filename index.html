@@ -74,12 +74,15 @@
     75% { transform: translateX(-5px); }
   }
 #game, #startScreen, #endScreen {
-      min-height: 80vh;
-      width: 100%;
-      max-width: 600px;
-      padding: 20px;
-      box-sizing: border-box;
-    }
+  width: 100vw;
+  height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -111,8 +114,8 @@
 
   <div id="endScreen" style="display:none;"></div>
 
-  <audio id="sound-correct" src="https://cdn.pixabay.com/download/audio/2022/02/15/audio_94b4a2b6c1.mp3?filename=correct-6033.mp3"></audio></audio></audio>
-  <audio id="sound-wrong" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c43b3b5b63.mp3?filename=error-2-123105.mp3"></audio></audio></audio>
+  <audio id="sound-correct" src="https://cdn.pixabay.com/download/audio/2022/02/15/audio_94b4a2b6c1.mp3?filename=correct-6033.mp3"></audio>
+  <audio id="sound-wrong" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c43b3b5b63.mp3?filename=error-2-123105.mp3"></audio>
 
   <script>
    const allWords = [
@@ -251,8 +254,8 @@
   { en: 'doctor', he: 'רופא' },
   { en: 'student', he: 'סטודנט' },
   { en: 'worker', he: 'עובד' },
-  { en: 'school', he: 'בית' },
-  { en: 'hospital', he: 'בית' },
+  { en: 'school', he: 'בית ספר' },
+  { en: 'hospital', he: 'בית חולים' },
   { en: 'bank', he: 'בנק' },
   { en: 'restaurant', he: 'מסעדה' },
   { en: 'airport', he: 'שדה' },
