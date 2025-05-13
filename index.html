@@ -5,6 +5,14 @@
   <title>English-Hebrew Word Quiz</title>
   <style>
     body {
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       font-size: 1.4em;
       line-height: 1.6;
       background: linear-gradient(135deg, #e3f2fd, #bbdefb);
@@ -68,6 +76,12 @@
     50% { transform: translateX(5px); }
     75% { transform: translateX(-5px); }
   }
+#game, #startScreen, #endScreen {
+      width: 100%;
+      max-width: 600px;
+      padding: 20px;
+      box-sizing: border-box;
+    }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -273,7 +287,7 @@
   { en: 'evening', he: 'ערב' },
   { en: 'night', he: 'לילה' },
   { en: 'soon', he: 'בקרוב' },
-  { en: 'later', he: 'מאוחר' },
+  { en: 'later', he: 'מאוחר יותר' },
   { en: 'now', he: 'עכשיו' },
   { en: 'before', he: 'לפני' },
   { en: 'after', he: 'אחרי' },
